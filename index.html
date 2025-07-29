@@ -1,266 +1,282 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" ng-app="mobileApp">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Telegram Mini App</title>
-    
-    <!-- This is the official Telegram Web App SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- We'll use Tailwind CSS for easy, clean styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram Mini App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular-route.min.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    angular.module('mobileApp', ['ngRoute'])
+      .controller('MainCtrl', ['$scope', function($scope) {
+        $scope.menuOpen = false;
+        $scope.toggleMenu = function() {
+          $scope.menuOpen = !$scope.menuOpen;
+        };
 
-    <style>
-        /* A little extra style for smooth transitions and a better look */
-        body, button, input, select {
-            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-        }
-        .tab-button.active {
-            border-bottom-width: 2px;
-        }
-        .view {
-            display: none;
-        }
-        .view.active {
-            display: block;
-        }
-    </style>
-</head>
-<body class="font-sans">
+        // Telegram WebApp initialization
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        $scope.user = tg.initDataUnsafe.user || { first_name: 'Guest' };
 
-    <div id="mainContainer" class="max-w-lg mx-auto">
-        <!-- Header & Navigation -->
-        <header class="p-4 sticky top-0 z-10 backdrop-blur-md">
-            <nav class="flex justify-around border-b">
-                <button id="homeTab" class="tab-button flex-1 py-2 text-center font-semibold">Home</button>
-                <button id="expensesTab" class="tab-button flex-1 py-2 text-center font-semibold">Expenses</button>
-                <button id="invoicesTab" class="tab-button flex-1 py-2 text-center font-semibold">Invoices</button>
-            </nav>
-        </header>
+        // Dynamic theme adaptation
+        $scope.theme = tg.themeParams;
+        document.body.style.backgroundColor = tg.themeParams.bg_color || '#f3f4f6';
+      }])
+      .service('DataService', function() {
+        const storage = {
+          expenses: JSON.parse(localStorage.getItem('expenses')) || [],
+          invoices: JSON.parse(localStorage.getItem('invoices')) || [],
+          customers: JSON.parse(localStorage.getItem('customers')) || []
+        };
 
-        <main class="p-4">
-            <!-- Home View -->
-            <div id="homeView" class="view">
-                <div class="text-center mb-6">
-                    <h1 class="text-3xl font-bold">Welcome!</h1>
-                    <p class="text-sm">This is your enhanced Telegram Mini App.</p>
-                </div>
-                <div id="userInfo" class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-6">
-                    <h2 class="text-xl font-semibold mb-3">User Information</h2>
-                    <div id="userInfoContent" class="space-y-2">
-                        <p>Loading data from Telegram...</p>
-                    </div>
-                </div>
-            </div>
+        return {
+          getExpenses: () => storage.expenses,
+          addExpense: (expense) => {
+            expense.id = Date.now();
+            storage.expenses.push(expense);
+            localStorage.setItem('expenses', JSON.stringify(storage.expenses));
+          },
+          getInvoices: () => storage.invoices,
+          addInvoice: (invoice) => {
+            invoice.id = Date.now();
+            storage.invoices.push(invoice);
+            localStorage.setItem('invoices', JSON.stringify(storage.invoices));
+          },
+          getCustomers: () => storage.customers,
+          addCustomer: (customer) => {
+            customer.id = Date.now();
+            storage.customers.push(customer);
+            localStorage.setItem('customers', JSON.stringify(storage.customers));
+          }
+        };
+      })
+      .controller('ExpenseCtrl', ['$scope', 'DataService', function($scope, DataService) {
+        $scope.expenses = DataService.getExpenses();
+        $scope.newExpense = { name: '', currency: 'USD', amount: '', date: '' };
+        $scope.currencies = ['USD', 'KHR'];
 
-            <!-- Expenses View -->
-            <div id="expensesView" class="view">
-                <h2 class="text-2xl font-bold mb-4 text-center">Expense Tracker</h2>
-                <!-- Add Expense Form -->
-                <form id="expenseForm" class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-6 mb-6 space-y-4">
-                    <h3 class="text-lg font-semibold">Add New Expense</h3>
-                    <div>
-                        <label for="expenseName" class="block text-sm font-medium">Expense Name</label>
-                        <input type="text" id="expenseName" name="expenseName" required class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 sm:text-sm">
-                    </div>
-                    <div>
-                        <label for="amount" class="block text-sm font-medium">Amount</label>
-                        <input type="number" id="amount" name="amount" step="0.01" required class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 sm:text-sm">
-                    </div>
-                    <div>
-                        <label for="currency" class="block text-sm font-medium">Currency</label>
-                        <select id="currency" name="currency" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 sm:text-sm">
-                            <option value="KHR">KHR (៛)</option>
-                            <option value="USD">USD ($)</option>
-                        </select>
-                    </div>
-                    <button type="submit" id="addExpenseBtn" class="w-full text-white font-bold py-2 px-4 rounded-lg shadow-lg">Add Expense</button>
-                </form>
-                <!-- Expense Table -->
-                <div class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-6">
-                     <h3 class="text-lg font-semibold mb-2">Expense List</h3>
-                     <div class="overflow-x-auto">
-                        <table id="expenseTable" class="min-w-full text-sm text-left">
-                            <thead class="border-b font-medium">
-                                <tr>
-                                    <th class="px-4 py-2">Name</th>
-                                    <th class="px-4 py-2">KHR</th>
-                                    <th class="px-4 py-2">USD</th>
-                                    <th class="px-4 py-2">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="expenseTableBody">
-                                <!-- Expense rows will be inserted here -->
-                            </tbody>
-                        </table>
-                     </div>
-                </div>
-            </div>
+        const tg = window.Telegram.WebApp;
+        tg.MainButton.setText('Add Expense');
+        tg.MainButton.show();
 
-            <!-- Invoices View -->
-            <div id="invoicesView" class="view">
-                <h2 class="text-2xl font-bold mb-4 text-center">Invoice Creator</h2>
-                <div class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-8 text-center">
-                    <p class="mb-4">Click the button below to generate a new invoice. This will open a confirmation dialog.</p>
-                    <button id="createInvoiceBtn" class="w-full text-white font-bold py-3 px-4 rounded-lg shadow-lg">Create New Invoice</button>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Error message for when not running in Telegram -->
-    <div id="errorContainer" class="hidden text-center p-8">
-        <h1 class="text-2xl font-bold text-red-600 mb-2">Error</h1>
-        <p class="text-gray-700">This web application is designed to be run as a <a href="https://core.telegram.org/bots/webapps" class="text-blue-500 underline">Telegram Mini App</a>.</p>
-        <p class="text-gray-500 mt-4">Please open it through a Telegram bot.</p>
-    </div>
-
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // The main object for interacting with the Telegram client
-            const tg = window.Telegram.WebApp;
-
-            // --- DOM ELEMENTS ---
-            const mainContainer = document.getElementById('mainContainer');
-            const errorContainer = document.getElementById('errorContainer');
-            const views = document.querySelectorAll('.view');
-            const tabs = document.querySelectorAll('.tab-button');
-
-            // --- APP STATE ---
-            let expenses = [];
-            const KHR_TO_USD_RATE = 4100; // Approximate rate
-
-            // --- CHECK IF IN TELEGRAM ---
-            if (tg.initDataUnsafe.user === undefined) {
-                mainContainer.classList.add('hidden');
-                errorContainer.classList.remove('hidden');
-                document.body.classList.add('bg-gray-100');
-                return; // Stop execution if not in Telegram
-            }
-
-            // --- 1. INITIALIZE THE APP ---
-            tg.ready();
-            tg.expand();
-
-            // --- 2. THEME HANDLING ---
-            const applyTheme = () => {
-                const theme = tg.themeParams;
-                const body = document.body;
-                
-                // Set body colors
-                body.style.backgroundColor = theme.bg_color || '#ffffff';
-                body.style.color = theme.text_color || '#000000';
-
-                // Set button colors
-                const buttons = document.querySelectorAll('#addExpenseBtn, #createInvoiceBtn');
-                buttons.forEach(btn => {
-                    btn.style.backgroundColor = theme.button_color || '#3390ec';
-                    btn.style.color = theme.button_text_color || '#ffffff';
-                });
-                
-                // Set tab active border color
-                tabs.forEach(tab => {
-                    tab.style.borderColor = theme.button_color || '#3390ec';
-                });
-            };
-            applyTheme();
-            tg.onEvent('themeChanged', applyTheme);
-
-            // --- 3. NAVIGATION LOGIC ---
-            const showView = (viewId) => {
-                views.forEach(view => view.classList.remove('active'));
-                tabs.forEach(tab => tab.classList.remove('active'));
-                
-                document.getElementById(viewId).classList.add('active');
-                document.getElementById(viewId.replace('View', 'Tab')).classList.add('active');
-            };
-
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => showView(tab.id.replace('Tab', 'View')));
-            });
-
-            // --- 4. DISPLAY USER DATA (HOME VIEW) ---
-            const userInfoContent = document.getElementById('userInfoContent');
-            const user = tg.initDataUnsafe.user;
-            if (user) {
-                userInfoContent.innerHTML = `
-                    <p><strong>First Name:</strong> ${user.first_name || 'N/A'}</p>
-                    <p><strong>Username:</strong> ${user.username ? '@' + user.username : 'N/A'}</p>
-                    <p><strong>ID:</strong> ${user.id}</p>
-                `;
-            }
-
-            // --- 5. EXPENSE TRACKER LOGIC ---
-            const expenseForm = document.getElementById('expenseForm');
-            const expenseTableBody = document.getElementById('expenseTableBody');
-
-            const renderExpenses = () => {
-                expenseTableBody.innerHTML = ''; // Clear existing rows
-                if (expenses.length === 0) {
-                    expenseTableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4">No expenses added yet.</td></tr>`;
-                } else {
-                    expenses.forEach(exp => {
-                        const row = document.createElement('tr');
-                        row.className = 'border-b';
-                        row.innerHTML = `
-                            <td class="px-4 py-2">${exp.name}</td>
-                            <td class="px-4 py-2">${exp.khr.toFixed(2)} ៛</td>
-                            <td class="px-4 py-2">$${exp.usd.toFixed(2)}</td>
-                            <td class="px-4 py-2">${exp.date}</td>
-                        `;
-                        expenseTableBody.appendChild(row);
-                    });
-                }
-            };
-
-            expenseForm.addEventListener('submit', function (event) {
-                event.preventDefault();
-                const name = document.getElementById('expenseName').value;
-                const amount = parseFloat(document.getElementById('amount').value);
-                const currency = document.getElementById('currency').value;
-
-                let khr, usd;
-                if (currency === 'USD') {
-                    usd = amount;
-                    khr = amount * KHR_TO_USD_RATE;
-                } else {
-                    khr = amount;
-                    usd = amount / KHR_TO_USD_RATE;
-                }
-                
-                const newExpense = {
-                    name,
-                    khr,
-                    usd,
-                    date: new Date().toLocaleDateString()
-                };
-
-                expenses.push(newExpense);
-                renderExpenses();
-                expenseForm.reset();
-            });
-
-
-            // --- 6. INVOICE CREATOR LOGIC ---
-            document.getElementById('createInvoiceBtn').addEventListener('click', () => {
-                tg.showConfirm("Are you sure you want to create a new invoice?", (confirmed) => {
-                    if (confirmed) {
-                        tg.showAlert("Invoice created successfully!");
-                    }
-                });
-            });
-
-            // --- 7. MAIN BUTTON CONFIGURATION ---
-            tg.MainButton.setText("Close Mini App");
-            tg.MainButton.show();
-            tg.MainButton.onClick(() => tg.close());
-
-            // --- INITIALIZE VIEW ---
-            showView('homeView');
-            renderExpenses(); // Initial render for the expense table
+        tg.MainButton.onClick(function() {
+          if ($scope.newExpense.name && $scope.newExpense.currency && $scope.newExpense.amount && $scope.newExpense.date) {
+            DataService.addExpense(angular.copy($scope.newExpense));
+            $scope.newExpense = { name: '', currency: 'USD', amount: '', date: '' };
+            $scope.$apply();
+            tg.showAlert('Expense added successfully!');
+          } else {
+            tg.showAlert('Please fill all fields.');
+          }
         });
-    </script>
+      }])
+      .controller('InvoiceCtrl', ['$scope', 'DataService', function($scope, DataService) {
+        $scope.invoices = DataService.getInvoices();
+        $scope.customers = DataService.getCustomers();
+        $scope.newInvoice = { customerId: '', date: '', items: [] };
+        $scope.newItem = { name: '', quantity: '', price: '' };
+
+        const tg = window.Telegram.WebApp;
+        tg.MainButton.setText('Create Invoice');
+        tg.MainButton.show();
+
+        $scope.addItem = function() {
+          if ($scope.newItem.name && $scope.newItem.quantity && $scope.newItem.price) {
+            $scope.newInvoice.items.push(angular.copy($scope.newItem));
+            $scope.newItem = { name: '', quantity: '', price: '' };
+          }
+        };
+
+        $scope.removeItem = function(index) {
+          $scope.newInvoice.items.splice(index, 1);
+        };
+
+        $scope.calculateTotal = function(items) {
+          return items.reduce((total, item) => total + (item.quantity * item.price), 0);
+        };
+
+        tg.MainButton.onClick(function() {
+          if ($scope.newInvoice.customerId && $scope.newInvoice.date && $scope.newInvoice.items.length > 0) {
+            const customer = $scope.customers.find(c => c.id == $scope.newInvoice.customerId);
+            $scope.newInvoice.customerName = customer ? customer.name : '';
+            $scope.newInvoice.total = $scope.calculateTotal($scope.newInvoice.items);
+            DataService.addInvoice(angular.copy($scope.newInvoice));
+            $scope.newInvoice = { customerId: '', date: '', items: [] };
+            $scope.$apply();
+            tg.showAlert('Invoice created successfully!');
+          } else {
+            tg.showAlert('Please select a customer, date, and add at least one item.');
+          }
+        });
+      }])
+      .controller('CustomerCtrl', ['$scope', 'DataService', function($scope, DataService) {
+        $scope.customers = DataService.getCustomers();
+        $scope.newCustomer = { name: '', email: '' };
+
+        const tg = window.Telegram.WebApp;
+        tg.MainButton.setText('Add Customer');
+        tg.MainButton.show();
+
+        $scope.addCustomer = function() {
+          if ($scope.newCustomer.name && $scope.newCustomer.email) {
+            DataService.addCustomer(angular.copy($scope.newCustomer));
+            $scope.newCustomer = { name: '', email: '' };
+            $scope.$apply();
+            tg.showAlert('Customer added successfully!');
+          } else {
+            tg.showAlert('Please fill all fields.');
+          }
+        };
+
+        tg.MainButton.onClick(function() {
+          $scope.addCustomer();
+        });
+      }])
+      .config(['$routeProvider', function($routeProvider) {
+        $routeProvider
+          .when('/', {
+            template: `
+              <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md animate-fade-in">
+                <h2 class="text-2xl font-semibold mb-4">Welcome, {{user.first_name}}</h2>
+                <p class="text-gray-700">Manage your expenses, invoices, and customers within Telegram.</p>
+              </div>
+            `
+          })
+          .when('/expenses', {
+            template: `
+              <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md animate-fade-in">
+                <h2 class="text-2xl font-semibold mb-4">Expenses</h2>
+                <div class="mb-4">
+                  <input type="text" ng-model="newExpense.name" placeholder="Expense Name" class="w-full p-2 mb-2 border rounded">
+                  <select ng-model="newExpense.currency" class="w-full p-2 mb-2 border rounded">
+                    <option ng-repeat="currency in currencies" value="{{currency}}">{{currency}}</option>
+                  </select>
+                  <input type="number" ng-model="newExpense.amount" placeholder="Amount" class="w-full p-2 mb-2 border rounded">
+                  <input type="date" ng-model="newExpense.date" class="w-full p-2 mb-2 border rounded">
+                </div>
+                <div class="space-y-4">
+                  <div ng-repeat="expense in expenses" class="p-4 bg-gray-50 rounded-lg shadow-sm">
+                    <p class="font-semibold">{{expense.name}}</p>
+                    <p>{{expense.amount | currency:expense.currency}} - {{expense.date}}</p>
+                  </div>
+                </div>
+              </div>
+            `,
+            controller: 'ExpenseCtrl'
+          })
+          .when('/invoices', {
+            template: `
+              <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md animate-fade-in">
+                <h2 class="text-2xl font-semibold mb-4">Invoices</h2>
+                <div class="mb-4">
+                  <select ng-model="newInvoice.customerId" class="w-full p-2 mb-2 border rounded">
+                    <option value="" disabled>Select Customer</option>
+                    <option ng-repeat="customer in customers" value="{{customer.id}}">{{customer.name}}</option>
+                  </select>
+                  <input type="date" ng-model="newInvoice.date" class="w-full p-2 mb-2 border rounded">
+                  <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-2">Add Item</h3>
+                    <input type="text" ng-model="newItem.name" placeholder="Item Name" class="w-full p-2 mb-2 border rounded">
+                    <input type="number" ng-model="newItem.quantity" placeholder="Quantity" class="w-full p-2 mb-2 border rounded">
+                    <input type="number" ng-model="newItem.price" placeholder="Price" class="w-full p-2 mb-2 border rounded">
+                    <button ng-click="addItem()" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">Add Item</button>
+                    <div ng-if="newInvoice.items.length > 0" class="mt-4">
+                      <p class="font-semibold">Items:</p>
+                      <div ng-repeat="item in newInvoice.items" class="flex justify-between items-center p-2 bg-white rounded shadow-sm mt-2">
+                        <span>{{item.name}} ({{item.quantity}} x {{item.price | currency}})</span>
+                        <button ng-click="removeItem($index)" class="text-red-500 hover:text-red-700">Remove</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="space-y-4">
+                  <div ng-repeat="invoice in invoices" class="p-4 bg-gray-50 rounded-lg shadow-sm">
+                    <p class="font-semibold">{{invoice.customerName}}</p>
+                    <p>Total: {{invoice.total | currency}} - {{invoice.date}}</p>
+                    <p>Items: {{invoice.items.length}}</p>
+                  </div>
+                </div>
+              </div>
+            `,
+            controller: 'InvoiceCtrl'
+          })
+          .when('/customers', {
+            template: `
+              <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md animate-fade-in">
+                <h2 class="text-2xl font-semibold mb-4">Customers</h2>
+                <div class="mb-4">
+                  <input type="text" ng-model="newCustomer.name" placeholder="Name" class="w-full p-2 mb-2 border rounded">
+                  <input type="email" ng-model="newCustomer.email" placeholder="Email" class="w-full p-2 mb-2 border rounded">
+                </div>
+                <div class="space-y-4">
+                  <div ng-repeat="customer in customers" class="p-4 bg-gray-50 rounded-lg shadow-sm">
+                    <p class="font-semibold">{{customer.name}}</p>
+                    <p>{{customer.email}}</p>
+                  </div>
+                </div>
+              </div>
+            `,
+            controller: 'CustomerCtrl'
+          })
+          .when('/about', {
+            template: `
+              <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md animate-fade-in">
+                <h2 class="text-2xl font-semibold mb-4">About</h2>
+                <p class="text-gray-700">Manage expenses, invoices, and customers within Telegram.</p>
+              </div>
+            `
+          })
+          .when('/contact', {
+            template: `
+              <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md animate-fade-in">
+                <h2 class="text-2xl font-semibold mb-4">Contact</h2>
+                <p class="text-gray-700">Get in touch with us!</p>
+              </div>
+            `
+          })
+          .otherwise({ redirectTo: '/' });
+      }]);
+  </script>
+  <style>
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body ng-controller="MainCtrl" class="flex flex-col h-screen" ng-style="{'background-color': theme.bg_color}">
+  <!-- Header -->
+  <header class="bg-blue-600 text-white p-4 flex justify-between items-center shadow-md">
+    <h1 class="text-lg font-bold">Telegram Mini App</h1>
+    <button class="md:hidden" ng-click="toggleMenu()">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Navigation -->
+  <nav ng-class="{'hidden': !menuOpen, 'block': menuOpen}" class="bg-blue-500 text-white md:block">
+    <ul class="flex flex-col md:flex-row md:space-x-4 p-4">
+      <li><a href="#!/" class="block py-2 hover:bg-blue-700 rounded">Home</a></li>
+      <li><a href="#!/expenses" class="block py-2 hover:bg-blue-700 rounded">Expenses</a></li>
+      <li><a href="#!/invoices" class="block py-2 hover:bg-blue-700 rounded">Invoices</a></li>
+      <li><a href="#!/customers" class="block py-2 hover:bg-blue-700 rounded">Customers</a></li>
+      <li><a href="#!/about" class="block py-2 hover:bg-blue-700 rounded">About</a></li>
+      <li><a href="#!/contact" class="block py-2 hover:bg-blue-700 rounded">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-4 overflow-y-auto">
+    <div ng-view></div>
+  </main>
 </body>
 </html>
