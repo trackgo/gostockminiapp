@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Telegram Mini App</title>
+    
+    <!-- This is the official Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- We'll use Tailwind CSS for easy, clean styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* A little extra style for smooth transitions */
+        body, button {
+            transition: background-color 0.3s, color 0.3s;
+        }
+    </style>
+</head>
+<body class="font-sans">
+
+    <div id="mainContainer" class="p-4 max-w-lg mx-auto">
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl font-bold">Welcome!</h1>
+            <p class="text-sm">This is your first Telegram Mini App.</p>
+        </header>
+
+        <!-- User Info Section -->
+        <div id="userInfo" class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-3">User Information</h2>
+            <div id="userInfoContent" class="space-y-2">
+                <p>Loading data from Telegram...</p>
+            </div>
+        </div>
+
+        <!-- Interaction Section -->
+        <div class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-6 mb-6">
+             <h2 class="text-xl font-semibold mb-3">App Features</h2>
+            <p class="text-sm mb-4">This app demonstrates some core Mini App features.</p>
+            <button id="hapticButton" class="w-full text-white font-bold py-3 px-4 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2">
+                Trigger Haptic Feedback
+            </button>
+        </div>
+
+        <!-- Explanation Section -->
+        <div class="text-xs text-center p-4 rounded-lg">
+            <p><strong class="font-semibold">Notice the colors?</strong> They automatically match your Telegram theme. The main button at the bottom is also controlled by this app.</p>
+        </div>
+    </div>
+
+    <!-- Error message for when not running in Telegram -->
+    <div id="errorContainer" class="hidden text-center p-8">
+        <h1 class="text-2xl font-bold text-red-600 mb-2">Error</h1>
+        <p class="text-gray-700">This web application is designed to be run as a <a href="https://core.telegram.org/bots/webapps" class="text-blue-500 underline">Telegram Mini App</a>.</p>
+        <p class="text-gray-500 mt-4">Please open it through a Telegram bot.</p>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // The main object for interacting with the Telegram client
+            const tg = window.Telegram.WebApp;
+
+            const mainContainer = document.getElementById('mainContainer');
+            const errorContainer = document.getElementById('errorContainer');
+            
+            // Check if the app is running inside Telegram
+            if (tg.initDataUnsafe.user === undefined) {
+                mainContainer.classList.add('hidden');
+                errorContainer.classList.remove('hidden');
+                document.body.classList.add('bg-gray-100');
+                return; // Stop execution if not in Telegram
+            }
+
+            // --- 1. INITIALIZE THE APP ---
+            // Let the Telegram client know the app is ready to be displayed.
+            tg.ready();
+
+            // --- 2. THEME HANDLING ---
+            const applyTheme = () => {
+                // Get theme parameters from Telegram
+                const theme = tg.themeParams;
+                const body = document.body;
+                const hapticButton = document.getElementById('hapticButton');
+
+                // Apply colors to the app's elements
+                body.style.backgroundColor = theme.bg_color || '#ffffff';
+                body.style.color = theme.text_color || '#000000';
+                
+                if (hapticButton) {
+                    hapticButton.style.backgroundColor = theme.button_color || '#3390ec';
+                    hapticButton.style.color = theme.button_text_color || '#ffffff';
+                }
+            };
+
+            // Apply the theme as soon as the app loads
+            applyTheme();
+            // And listen for any theme changes while the app is open
+            tg.onEvent('themeChanged', applyTheme);
+
+
+            // --- 3. DISPLAY USER DATA ---
+            const userInfoContent = document.getElementById('userInfoContent');
+            const user = tg.initDataUnsafe.user;
+
+            if (user) {
+                let userInfoHtml = `
+                    <p><strong>First Name:</strong> ${user.first_name || 'N/A'}</p>
+                    <p><strong>Last Name:</strong> ${user.last_name || 'N/A'}</p>
+                    <p><strong>Username:</strong> ${user.username ? '@' + user.username : 'N/A'}</p>
+                    <p><strong>ID:</strong> ${user.id}</p>
+                    <p><strong>Is Premium?</strong> ${user.is_premium ? 'Yes ✨' : 'No'}</p>
+                `;
+                userInfoContent.innerHTML = userInfoHtml;
+            } else {
+                userInfoContent.innerHTML = "<p>Could not retrieve user information.</p>";
+            }
+
+            // --- 4. CONFIGURE THE MAIN BUTTON ---
+            // This is the button that appears at the very bottom of the screen.
+            tg.MainButton.setText("Close Mini App");
+            tg.MainButton.show();
+            tg.MainButton.onClick(() => {
+                // This function closes the Mini App.
+                tg.close();
+            });
+
+            // --- 5. HAPTIC FEEDBACK ---
+            const hapticButton = document.getElementById('hapticButton');
+            hapticButton.addEventListener('click', () => {
+                // Triggers a haptic feedback notification.
+                // Types: 'error', 'success', 'warning'
+                tg.HapticFeedback.notificationOccurred('success');
+            });
+            
+            // Expand the app to the full height of the viewport
+            tg.expand();
+        });
+    </script>
+</body>
+</html>
