@@ -12,41 +12,101 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* A little extra style for smooth transitions */
-        body, button {
-            transition: background-color 0.3s, color 0.3s;
+        /* A little extra style for smooth transitions and a better look */
+        body, button, input, select {
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        .tab-button.active {
+            border-bottom-width: 2px;
+        }
+        .view {
+            display: none;
+        }
+        .view.active {
+            display: block;
         }
     </style>
 </head>
 <body class="font-sans">
 
-    <div id="mainContainer" class="p-4 max-w-lg mx-auto">
-        <header class="mb-6 text-center">
-            <h1 class="text-3xl font-bold">Welcome!</h1>
-            <p class="text-sm">This is your first Telegram Mini App.</p>
+    <div id="mainContainer" class="max-w-lg mx-auto">
+        <!-- Header & Navigation -->
+        <header class="p-4 sticky top-0 z-10 backdrop-blur-md">
+            <nav class="flex justify-around border-b">
+                <button id="homeTab" class="tab-button flex-1 py-2 text-center font-semibold">Home</button>
+                <button id="expensesTab" class="tab-button flex-1 py-2 text-center font-semibold">Expenses</button>
+                <button id="invoicesTab" class="tab-button flex-1 py-2 text-center font-semibold">Invoices</button>
+            </nav>
         </header>
 
-        <!-- User Info Section -->
-        <div id="userInfo" class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-6 mb-6">
-            <h2 class="text-xl font-semibold mb-3">User Information</h2>
-            <div id="userInfoContent" class="space-y-2">
-                <p>Loading data from Telegram...</p>
+        <main class="p-4">
+            <!-- Home View -->
+            <div id="homeView" class="view">
+                <div class="text-center mb-6">
+                    <h1 class="text-3xl font-bold">Welcome!</h1>
+                    <p class="text-sm">This is your enhanced Telegram Mini App.</p>
+                </div>
+                <div id="userInfo" class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-3">User Information</h2>
+                    <div id="userInfoContent" class="space-y-2">
+                        <p>Loading data from Telegram...</p>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Interaction Section -->
-        <div class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-6 mb-6">
-             <h2 class="text-xl font-semibold mb-3">App Features</h2>
-            <p class="text-sm mb-4">This app demonstrates some core Mini App features.</p>
-            <button id="hapticButton" class="w-full text-white font-bold py-3 px-4 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2">
-                Trigger Haptic Feedback
-            </button>
-        </div>
+            <!-- Expenses View -->
+            <div id="expensesView" class="view">
+                <h2 class="text-2xl font-bold mb-4 text-center">Expense Tracker</h2>
+                <!-- Add Expense Form -->
+                <form id="expenseForm" class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-6 mb-6 space-y-4">
+                    <h3 class="text-lg font-semibold">Add New Expense</h3>
+                    <div>
+                        <label for="expenseName" class="block text-sm font-medium">Expense Name</label>
+                        <input type="text" id="expenseName" name="expenseName" required class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="amount" class="block text-sm font-medium">Amount</label>
+                        <input type="number" id="amount" name="amount" step="0.01" required class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="currency" class="block text-sm font-medium">Currency</label>
+                        <select id="currency" name="currency" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 sm:text-sm">
+                            <option value="KHR">KHR (៛)</option>
+                            <option value="USD">USD ($)</option>
+                        </select>
+                    </div>
+                    <button type="submit" id="addExpenseBtn" class="w-full text-white font-bold py-2 px-4 rounded-lg shadow-lg">Add Expense</button>
+                </form>
+                <!-- Expense Table -->
+                <div class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-6">
+                     <h3 class="text-lg font-semibold mb-2">Expense List</h3>
+                     <div class="overflow-x-auto">
+                        <table id="expenseTable" class="min-w-full text-sm text-left">
+                            <thead class="border-b font-medium">
+                                <tr>
+                                    <th class="px-4 py-2">Name</th>
+                                    <th class="px-4 py-2">KHR</th>
+                                    <th class="px-4 py-2">USD</th>
+                                    <th class="px-4 py-2">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseTableBody">
+                                <!-- Expense rows will be inserted here -->
+                            </tbody>
+                        </table>
+                     </div>
+                </div>
+            </div>
 
-        <!-- Explanation Section -->
-        <div class="text-xs text-center p-4 rounded-lg">
-            <p><strong class="font-semibold">Notice the colors?</strong> They automatically match your Telegram theme. The main button at the bottom is also controlled by this app.</p>
-        </div>
+            <!-- Invoices View -->
+            <div id="invoicesView" class="view">
+                <h2 class="text-2xl font-bold mb-4 text-center">Invoice Creator</h2>
+                <div class="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-8 text-center">
+                    <p class="mb-4">Click the button below to generate a new invoice. This will open a confirmation dialog.</p>
+                    <button id="createInvoiceBtn" class="w-full text-white font-bold py-3 px-4 rounded-lg shadow-lg">Create New Invoice</button>
+                </div>
+            </div>
+        </main>
     </div>
 
     <!-- Error message for when not running in Telegram -->
@@ -62,10 +122,17 @@
             // The main object for interacting with the Telegram client
             const tg = window.Telegram.WebApp;
 
+            // --- DOM ELEMENTS ---
             const mainContainer = document.getElementById('mainContainer');
             const errorContainer = document.getElementById('errorContainer');
-            
-            // Check if the app is running inside Telegram
+            const views = document.querySelectorAll('.view');
+            const tabs = document.querySelectorAll('.tab-button');
+
+            // --- APP STATE ---
+            let expenses = [];
+            const KHR_TO_USD_RATE = 4100; // Approximate rate
+
+            // --- CHECK IF IN TELEGRAM ---
             if (tg.initDataUnsafe.user === undefined) {
                 mainContainer.classList.add('hidden');
                 errorContainer.classList.remove('hidden');
@@ -74,68 +141,125 @@
             }
 
             // --- 1. INITIALIZE THE APP ---
-            // Let the Telegram client know the app is ready to be displayed.
             tg.ready();
+            tg.expand();
 
             // --- 2. THEME HANDLING ---
             const applyTheme = () => {
-                // Get theme parameters from Telegram
                 const theme = tg.themeParams;
                 const body = document.body;
-                const hapticButton = document.getElementById('hapticButton');
-
-                // Apply colors to the app's elements
+                
+                // Set body colors
                 body.style.backgroundColor = theme.bg_color || '#ffffff';
                 body.style.color = theme.text_color || '#000000';
+
+                // Set button colors
+                const buttons = document.querySelectorAll('#addExpenseBtn, #createInvoiceBtn');
+                buttons.forEach(btn => {
+                    btn.style.backgroundColor = theme.button_color || '#3390ec';
+                    btn.style.color = theme.button_text_color || '#ffffff';
+                });
                 
-                if (hapticButton) {
-                    hapticButton.style.backgroundColor = theme.button_color || '#3390ec';
-                    hapticButton.style.color = theme.button_text_color || '#ffffff';
+                // Set tab active border color
+                tabs.forEach(tab => {
+                    tab.style.borderColor = theme.button_color || '#3390ec';
+                });
+            };
+            applyTheme();
+            tg.onEvent('themeChanged', applyTheme);
+
+            // --- 3. NAVIGATION LOGIC ---
+            const showView = (viewId) => {
+                views.forEach(view => view.classList.remove('active'));
+                tabs.forEach(tab => tab.classList.remove('active'));
+                
+                document.getElementById(viewId).classList.add('active');
+                document.getElementById(viewId.replace('View', 'Tab')).classList.add('active');
+            };
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => showView(tab.id.replace('Tab', 'View')));
+            });
+
+            // --- 4. DISPLAY USER DATA (HOME VIEW) ---
+            const userInfoContent = document.getElementById('userInfoContent');
+            const user = tg.initDataUnsafe.user;
+            if (user) {
+                userInfoContent.innerHTML = `
+                    <p><strong>First Name:</strong> ${user.first_name || 'N/A'}</p>
+                    <p><strong>Username:</strong> ${user.username ? '@' + user.username : 'N/A'}</p>
+                    <p><strong>ID:</strong> ${user.id}</p>
+                `;
+            }
+
+            // --- 5. EXPENSE TRACKER LOGIC ---
+            const expenseForm = document.getElementById('expenseForm');
+            const expenseTableBody = document.getElementById('expenseTableBody');
+
+            const renderExpenses = () => {
+                expenseTableBody.innerHTML = ''; // Clear existing rows
+                if (expenses.length === 0) {
+                    expenseTableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4">No expenses added yet.</td></tr>`;
+                } else {
+                    expenses.forEach(exp => {
+                        const row = document.createElement('tr');
+                        row.className = 'border-b';
+                        row.innerHTML = `
+                            <td class="px-4 py-2">${exp.name}</td>
+                            <td class="px-4 py-2">${exp.khr.toFixed(2)} ៛</td>
+                            <td class="px-4 py-2">$${exp.usd.toFixed(2)}</td>
+                            <td class="px-4 py-2">${exp.date}</td>
+                        `;
+                        expenseTableBody.appendChild(row);
+                    });
                 }
             };
 
-            // Apply the theme as soon as the app loads
-            applyTheme();
-            // And listen for any theme changes while the app is open
-            tg.onEvent('themeChanged', applyTheme);
+            expenseForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                const name = document.getElementById('expenseName').value;
+                const amount = parseFloat(document.getElementById('amount').value);
+                const currency = document.getElementById('currency').value;
+
+                let khr, usd;
+                if (currency === 'USD') {
+                    usd = amount;
+                    khr = amount * KHR_TO_USD_RATE;
+                } else {
+                    khr = amount;
+                    usd = amount / KHR_TO_USD_RATE;
+                }
+                
+                const newExpense = {
+                    name,
+                    khr,
+                    usd,
+                    date: new Date().toLocaleDateString()
+                };
+
+                expenses.push(newExpense);
+                renderExpenses();
+                expenseForm.reset();
+            });
 
 
-            // --- 3. DISPLAY USER DATA ---
-            const userInfoContent = document.getElementById('userInfoContent');
-            const user = tg.initDataUnsafe.user;
+            // --- 6. INVOICE CREATOR LOGIC ---
+            document.getElementById('createInvoiceBtn').addEventListener('click', () => {
+                tg.showConfirm("Are you sure you want to create a new invoice?", (confirmed) => {
+                    if (confirmed) {
+                        tg.showAlert("Invoice created successfully!");
+                    }
+                });
+            });
 
-            if (user) {
-                let userInfoHtml = `
-                    <p><strong>First Name:</strong> ${user.first_name || 'N/A'}</p>
-                    <p><strong>Last Name:</strong> ${user.last_name || 'N/A'}</p>
-                    <p><strong>Username:</strong> ${user.username ? '@' + user.username : 'N/A'}</p>
-                    <p><strong>ID:</strong> ${user.id}</p>
-                    <p><strong>Is Premium?</strong> ${user.is_premium ? 'Yes ✨' : 'No'}</p>
-                `;
-                userInfoContent.innerHTML = userInfoHtml;
-            } else {
-                userInfoContent.innerHTML = "<p>Could not retrieve user information.</p>";
-            }
-
-            // --- 4. CONFIGURE THE MAIN BUTTON ---
-            // This is the button that appears at the very bottom of the screen.
+            // --- 7. MAIN BUTTON CONFIGURATION ---
             tg.MainButton.setText("Close Mini App");
             tg.MainButton.show();
-            tg.MainButton.onClick(() => {
-                // This function closes the Mini App.
-                tg.close();
-            });
+            tg.MainButton.onClick(() => tg.close());
 
-            // --- 5. HAPTIC FEEDBACK ---
-            const hapticButton = document.getElementById('hapticButton');
-            hapticButton.addEventListener('click', () => {
-                // Triggers a haptic feedback notification.
-                // Types: 'error', 'success', 'warning'
-                tg.HapticFeedback.notificationOccurred('success');
-            });
-            
-            // Expand the app to the full height of the viewport
-            tg.expand();
+            // --- INITIALIZE VIEW ---
+            showView('homeView');
+            renderExpenses(); // Initial render for the expense table
         });
     </script>
 </body>
